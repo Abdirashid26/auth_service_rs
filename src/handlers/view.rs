@@ -3,6 +3,8 @@ use sqlx::PgPool;
 use crate::auth::service::AuthService;
 use crate::models::user::User;
 use crate::utils::req_res::UniversalResponse;
+use std::time::Instant;
+
 
 pub async fn view_user(
     db_pool: web::Data<PgPool>,
@@ -10,6 +12,9 @@ pub async fn view_user(
     path: web::Path<String>,
 ) -> UniversalResponse<Option<User>> {
     let email = path.into_inner();
+
+    let start_time = Instant::now();
+
 
     // Fetch user from database
     let user_result = sqlx::query_as!(
@@ -47,16 +52,36 @@ pub async fn view_user(
             )
         });
 
+    let duration = start_time.elapsed();
+
+    println!("Query executed in: {:?}", duration);
+
+
+
     match user_result {
-        Ok(user) => UniversalResponse::success(
-            "User details retrieved".to_string(),
-            user  // Directly use the mapped User
-        ),
+        Ok(user) =>  {
+            if user.is_some() {
+                UniversalResponse::success(
+                    "User details retrieved".to_string(),
+                    user
+                )
+            }
+            else{
+                UniversalResponse::failed(
+                    "User Not Found".to_string(),
+                    None::<User>
+                )
+            }
+        },
         Err(err) => UniversalResponse::failed(
             "User not found".to_string(),
             None::<User>  // Explicit type annotation
         ),
     }
+
+
+
+
 }
 
 

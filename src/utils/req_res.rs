@@ -22,7 +22,7 @@ impl <T>  UniversalResponse<T>{
 
     pub fn failed( message : String, data : T) -> UniversalResponse<T>{
         Self{
-            status : "00".to_string(),
+            status : "01".to_string(),
             message,
             data,
         }
