@@ -1,5 +1,6 @@
+use std::sync::Arc;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
-use actix_web::{Error, HttpMessage};
+use actix_web::{web, Error, HttpMessage};
 use actix_web_httpauth::extractors::basic::BasicAuth;
 use actix_web_httpauth::extractors::bearer::BearerAuth;
 use crate::auth::jwt::Claims;
@@ -30,19 +31,20 @@ pub async fn bearer_validator(
     req : ServiceRequest,
     credentials : BearerAuth,
 ) -> Result<ServiceRequest, (Error,ServiceRequest)>{
-    let auth_service = req.app_data::<AuthService>().expect("auth service not found in app app data");
+    let auth_service = req.app_data::<web::Data<AuthService>>()
+        .expect("AuthService not found in app data");
 
-    let token = credentials.token();
-    
-    let validate_token_result = auth_service.validate_token(token);
-    
-    match validate_token_result {
+    match auth_service.validate_token(credentials.token()) {
         Ok(claims) => {
             req.extensions_mut().insert(claims);
             Ok(req)
-        }
-        Err(_) => {
-            Err((actix_web::error::ErrorUnauthorized("Invalid Token"), req))
+        },
+        Err(e) => {
+            log::warn!("Token validation failed: {}", e);
+            Err((
+                actix_web::error::ErrorUnauthorized("Invalid Token"),
+                req
+            ))
         }
     }
 
