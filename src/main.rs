@@ -46,8 +46,13 @@ async fn main()  -> std::io::Result<()> {
             .app_data(web::Data::new(pg_pool.clone()))
             .service(
                 web::resource("/api/v1/user/register")
-                    .wrap(basic_auth)
+                    .wrap(basic_auth.clone())
                     .route(web::post().to(handlers::registration::register))
+            )
+            .service(
+                web::resource("/api/v1/user/login")
+                    .wrap(basic_auth.clone())
+                    .route(web::post().to(handlers::auth::login))
             )
     })
         .bind("127.0.0.1:8081")?
